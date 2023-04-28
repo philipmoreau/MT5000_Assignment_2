@@ -1,0 +1,107 @@
+---
+title: "MT5000 Assignment 2"
+author: "Philip Moreau - 22260097"
+format: html
+editor: visual
+date: "04/26/2023"
+execute: 
+  echo: false
+  warning: false
+  message: false
+---
+```{r}
+#!label: set up 
+#!include: false
+
+library(tidyverse)
+library(maps)
+
+```
+
+```{r}
+#!label: data 
+#!include: false
+unicef_indicator_1 <- read.csv("unicef_indicator_1.csv")
+map_world <- map_data("world")
+unicef_2016 <- unicef_indicator_1 %>%
+  filter(time_period == 2016, obs_value > 0) %>% select(country, obs_value)
+map_obs_2016 <- full_join(map_world, unicef_2016, by = c("region" = "country"))
+```
+
+## Map of OBS Value
+Map based on Longitude and Latitude, colour shows details about country
+World Map shows the various countries that are provided in the data sheet as well as the average OBS value of the Wasted, Overweight, or Stunted survey of children under the age of five years old. The population used for the aggregation is children 0-59 months old. As we can see throughout the map, that the countries have a wide range of value ranging from 0.0 in countries such as the Czech Republic to as high as 52.6 in Kyrgyzstan.
+
+```{r}
+#!label: plot 
+ggplot(data = map_obs_2016) +
+  aes(x = long, y = lat, group = group, fill = obs_value, color = obs_value) +
+  geom_polygon() +
+  scale_fill_gradient(low = "lightblue", high = "red") +
+  labs(title = "Worldwide OBS Value", x = "", y = "") +
+  theme_classic()
+```
+
+## Relationship of GDP to OBS
+The comparison of the country and GDP per capita is shown within this Bar Chart, and we can notice that the majority of countries that have a higher OBS value as shown in the World Map correlate with this. Generally, the higher the OBS value in a specific country shows us that there is a lower GDP per capita as per that specific country. The countries that are are comparing are as follows: 
+
+- Mexico 
+- Egypt 
+- Russia
+- Sudan 
+- Nigeria 
+- Chad
+
+```{r}
+library(tidyverse)
+
+
+unicef_metadata <- read.csv("unicef_metadata.csv") 
+countries <- c("Mexico", "Egypt", "Russia", "Sudan","Nigeria", "Chad")
+unicef_GDP_2016 <- unicef_metadata %>%
+  filter(year == 2016, country %in% countries) %>% select(country, gdp = "GDP.per.capita..constant.2015.US..")
+
+ggplot(data = unicef_GDP_2016) + 
+  aes(x = country, y = gdp) +
+  geom_bar(stat = "identity", fill = "lightblue") + 
+  labs(title = "Comparative GDP", x = "Country", y = "GDP") +
+  theme_classic()
+```
+
+## Comparing GNI adn OBS Value Across Countries: A Statistical Analysis
+As we can see from the scatter plot below, the regression line states that the current trend of OBS value and relationship with the GNI is relative. generally, the higher the OBS Value within a country, the lower the GNI value is fo that specific country. This indicates that the lower the GNI is for a given country, the likelihood of children under the age of 5 being wasted, overweight or stunted is greater. 
+
+
+```{r}
+unicef_metadata <- read.csv("unicef_metadata.csv")
+unicef_indicator_2 <- read.csv("unicef_indicator_2.csv") %>%
+  filter(time_period == 2016, obs_value > 0)
+
+unicef_GNI_2016 <- unicef_metadata %>%
+  filter(year == 2016) %>% 
+  drop_na() %>%
+  select(country, gni = "GNI..current.US..")
+obs_2016 <- left_join(unicef_GNI_2016, unicef_indicator_2, by = "country") %>%
+  select(gni, obs_value, country) %>%
+  drop_na()
+
+ggplot(data = obs_2016) + 
+  aes(x = gni, y = obs_value, color = country) +
+  geom_point(alpha = 0.9, size = 2) +
+  geom_smooth() +
+  labs(title = "GNI Compared to OBS Value by Country", x = "GNI", y = "OBS Value") +
+  theme_classic()
+``` 
+
+## Time Series Chart of Population Growth in Selected Countries 
+From the time series chart below, we can see that the life expectancy slowly increases throughout the years in the majority of the countries listed blow, other than Russia. We can see from the time series chart that the population of Nigeria began to rapidly increases beginning on the 1990s. 
+```{r}
+pop_by_country <- read.csv("unicef_metadata.csv") %>%
+  filter(country %in% countries) %>% select(country, year, pop = "Population..total")
+
+ggplot(data = pop_by_country) + 
+  aes(x = year, y = pop, color = country) +
+  geom_line() +
+  labs(title = "Population Growth by Year", x = "Country", y = "Population") +
+  theme_classic()
+```
